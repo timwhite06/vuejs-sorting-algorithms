@@ -1,5 +1,6 @@
 <script>
 import { bubbleSortSteps } from '@/algorithms/bubble-sort'
+import { mergeSortSteps } from '@/algorithms/merge-sort'
 
 export default {
   props: {
@@ -45,6 +46,10 @@ export default {
     },
     mergeSort() {
       console.log('merge')
+      this.sortingSteps = mergeSortSteps(this.barArray)
+      this.$emit('update:totalFrames', this.sortingSteps.length)
+      console.log(this.sortingSteps.length)
+      console.log(this.sortingSteps[1])
     },
     insertionSort() {
       console.log('merge')
@@ -70,8 +75,22 @@ export default {
       this.barArray = Array.from(uniqueValues)
 
       // If we're already on a sorting algorithm, generate the steps
-      if (this.algorithmSelection === 'bubble') {
-        this.bubbleSort()
+      switch (this.algorithmSelection) {
+        case 'bubble':
+          this.bubbleSort()
+          break
+        case 'merge':
+          this.mergeSort()
+          break
+        case 'insertion':
+          this.insertionSort()
+          break
+        case 'quick':
+          this.quickSort()
+          break
+        default:
+          this.bubbleSort()
+          break
       }
     },
     generateBars() {
@@ -85,19 +104,37 @@ export default {
     number() {
       this.generateBars()
     },
-    isPlaying() {
-      if (this.isPlaying) {
-        console.log(this.frame)
-        console.log(this.sortingSteps.length)
-        // this.barArray = [...this.sortingSteps[this.frame]]
-      }
-    },
     triggerReset() {
       this.generateBars()
     },
+    algorithmSelection(newAlgorithm, oldAlgorithm) {
+      if (newAlgorithm !== oldAlgorithm) {
+        console.log(newAlgorithm)
+        switch (newAlgorithm) {
+          case 'bubble':
+            this.bubbleSort()
+            break
+          case 'merge':
+            this.mergeSort()
+            break
+          case 'insertion':
+            this.insertionSort()
+            break
+          case 'quick':
+            this.quickSort()
+            break
+          default:
+            this.bubbleSort()
+            break
+        }
+      }
+    },
     frame(newFrame) {
+      console.log(this.sortingSteps)
       if (
         this.isPlaying &&
+        this.sortingSteps.length > 0 &&
+        this.sortingSteps[newFrame] &&
         Object.keys(this.sortingSteps[newFrame]).length > 0
       ) {
         const { array, comparedIndices } = this.sortingSteps[newFrame]
@@ -111,8 +148,10 @@ export default {
         // Highlight the bars being compared
         const bar1 = document.getElementById(array[comparedIndices[0]])
         const bar2 = document.getElementById(array[comparedIndices[1]])
-        bar1.style.backgroundColor = 'red'
-        bar2.style.backgroundColor = 'orange'
+        if (bar1) bar1.style.backgroundColor = 'red'
+        if (bar2) bar2.style.backgroundColor = 'orange'
+
+        // Update the barArray with the new values
         this.barArray = [...array]
       }
     },
@@ -134,6 +173,7 @@ export default {
 
 <style scoped>
 #bar-chart {
+  overflow-x: auto;
   display: flex;
   gap: 5px;
   width: 100%;

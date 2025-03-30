@@ -109,11 +109,16 @@ const resetChart = async () => {
   await stopTimer()
   triggerReset.value = !triggerReset.value
 
-  // Reset colours
+  // Reset colours with null check
   const bars = document.getElementsByClassName('singular-bar')
-  Array.from(bars).forEach((bar) => {
-    bar.style.backgroundColor = 'rgb(84, 84, 236)'
-  })
+  if (bars && bars.length > 0) {
+    Array.from(bars).forEach((bar) => {
+      if (bar) {
+        // Additional null check for each bar
+        bar.style.backgroundColor = 'rgb(84, 84, 236)'
+      }
+    })
+  }
 }
 
 // Added function to update playback speed
@@ -168,6 +173,10 @@ watch(sliderValue, () => {
   frame.value = 0
   elapsedTime.value = 0
   formattedTime.value = formatTime(elapsedTime.value)
+})
+
+watch(algorithmSelection, () => {
+  resetChart()
 })
 </script>
 
