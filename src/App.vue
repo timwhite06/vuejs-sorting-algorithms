@@ -61,16 +61,20 @@ const stopAlgorithm = () => {
   frame.value = 0
 }
 
-const resetChart = () => {
-  stopAlgorithm()
-  frame.value = 0
+const resetChart = async () => {
+  await stopAlgorithm()
   triggerReset.value = !triggerReset.value
 
-  // Reset colours
+  // Reset colours with null check
   const bars = document.getElementsByClassName('singular-bar')
-  Array.from(bars).forEach((bar) => {
-    bar.style.backgroundColor = 'rgb(84, 84, 236)'
-  })
+  if (bars && bars.length > 0) {
+    Array.from(bars).forEach((bar) => {
+      if (bar) {
+        // Additional null check for each bar
+        bar.style.backgroundColor = 'rgb(84, 84, 236)'
+      }
+    })
+  }
 }
 
 // Added function to update playback speed
@@ -110,6 +114,10 @@ watch([frame, totalFrames], () => {
     progressSlider.style.backgroundSize = `${progress}% 100%`
     progressSlider.style.backgroundRepeat = 'no-repeat'
   }
+})
+
+watch(algorithmSelection, () => {
+  resetChart()
 })
 </script>
 
