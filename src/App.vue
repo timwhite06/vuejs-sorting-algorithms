@@ -13,6 +13,44 @@ const playbackSpeed = ref(10) // 1000 is 1 second
 const triggerReset = ref(false)
 let intervalId = null
 
+// Timer variables
+const elapsedTime = ref(0) // Time in seconds
+const timerIntervalId = ref(null)
+const formattedTime = ref('00:00')
+
+// Format seconds to MM:SS
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
+// Start the timer
+const startTimer = () => {
+  // Clear any existing timer
+  if (timerIntervalId.value) {
+    clearInterval(timerIntervalId.value)
+  }
+
+  // Reset elapsed time
+  elapsedTime.value = 0
+  formattedTime.value = formatTime(elapsedTime.value)
+
+  // Start a new timer
+  timerIntervalId.value = setInterval(() => {
+    elapsedTime.value++
+    formattedTime.value = formatTime(elapsedTime.value)
+  }, 1000) // Update every second
+}
+
+// Stop the timer
+const stopTimer = () => {
+  if (timerIntervalId.value) {
+    clearInterval(timerIntervalId.value)
+    timerIntervalId.value = null
+  }
+}
+
 const updateAlgorithm = (algorithm, event) => {
   algorithmSelection.value = algorithm
 
@@ -28,6 +66,7 @@ const updateAlgorithm = (algorithm, event) => {
 
 const playAlgorithm = () => {
   isPlaying.value = true
+  startTimer()
 
   let i = frame.value // Start from current frame instead of 0
   // Clear any previous interval to avoid overlaps
@@ -50,6 +89,7 @@ const pauseAlgorithm = () => {
     clearInterval(intervalId) // Need to clear interval when pausing
     intervalId = null
   }
+  stopTimer() // Pause the timer
 }
 
 const stopAlgorithm = () => {
@@ -59,11 +99,14 @@ const stopAlgorithm = () => {
     intervalId = null
   }
   frame.value = 0
+  stopTimer() // Stop the timer
+  elapsedTime.value = 0 // Reset timer
+  formattedTime.value = formatTime(elapsedTime.value)
 }
 
-const resetChart = () => {
-  stopAlgorithm()
-  frame.value = 0
+const resetChart = async () => {
+  await stopAlgorithm()
+  await stopTimer()
   triggerReset.value = !triggerReset.value
 
   // Reset colours
@@ -110,6 +153,21 @@ watch([frame, totalFrames], () => {
     progressSlider.style.backgroundSize = `${progress}% 100%`
     progressSlider.style.backgroundRepeat = 'no-repeat'
   }
+
+  if (frame.value === totalFrames.value) {
+    stopTimer()
+  }
+})
+
+watch(algorithmSelection, () => {
+  resetChart()
+})
+
+watch(sliderValue, () => {
+  // Reset the elasped frames and timer when the slider value changes
+  frame.value = 0
+  elapsedTime.value = 0
+  formattedTime.value = formatTime(elapsedTime.value)
 })
 </script>
 
@@ -137,6 +195,10 @@ watch([frame, totalFrames], () => {
       />
     </div>
     <div id="chart-controls">
+      <div class="init-player-info">
+        <p>Time (mm:ss): {{ formattedTime }}</p>
+        <p>Frame / Total frames:</p>
+      </div>
       <div class="player-info">
         <p>0</p>
         <input
@@ -177,7 +239,7 @@ watch([frame, totalFrames], () => {
       </div>
 
       <div id="speed-controls">
-        <p>Speed: {{ playbackSpeed }}ms</p>
+        <p>Speed per frame: {{ playbackSpeed }}ms</p>
         <div class="speed-buttons">
           <button
             v-for="preset in speedPresets"
@@ -285,6 +347,13 @@ header {
   width: 100%;
   display: flex;
   gap: 10px;
+}
+
+.init-player-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .player-info {
