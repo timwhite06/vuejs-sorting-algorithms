@@ -10,7 +10,7 @@ import GithubIcon from './icons/GithubIcon.vue'
     <img
       alt="Vue logo"
       class="logo"
-      src="./assets/logo.svg"
+      src="./../assets/logo.svg"
       width="30"
       height="30"
     />
