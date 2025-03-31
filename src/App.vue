@@ -5,6 +5,7 @@ import PlayButton from '@/components/icons/PlayButton.vue'
 import PauseButton from '@/components/icons/PauseButton.vue'
 import RangeSlider from './components/RangeSlider.vue'
 import ChartControlButton from './components/ChartControlButton.vue'
+import GithubIcon from './components/icons/GithubIcon.vue'
 
 const sliderValue = ref(30)
 const algorithmSelection = ref('bubble')
@@ -187,7 +188,10 @@ watch(algorithmSelection, () => {
       width="30"
       height="30"
     />
-    <p>Vue JS Algorithm Sorting Project</p>
+    <p>Timothy White - Vue JS Algorithm Sorting Project</p>
+    <a href="https://github.com/timwhite06/vuejs-sorting-algorithms">
+      <GithubIcon :width="32" :height="32" />
+    </a>
   </header>
 
   <main id="main-app">
