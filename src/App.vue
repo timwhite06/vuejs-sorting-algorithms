@@ -1,11 +1,12 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
-import BarChart from './components/BarChart.vue'
+import BarChart from '@/components/BarChart.vue'
 import PlayButton from '@/components/icons/PlayButton.vue'
 import PauseButton from '@/components/icons/PauseButton.vue'
-import RangeSlider from './components/RangeSlider.vue'
-import ChartControlButton from './components/ChartControlButton.vue'
-import GithubIcon from './components/icons/GithubIcon.vue'
+import RangeSlider from '@/components/RangeSlider.vue'
+import ChartControlButton from '@/components/ChartControlButton.vue'
+import GithubIcon from '@/components/icons/GithubIcon.vue'
+import { useTimer } from '@/hooks/useTimer'
 
 const sliderValue = ref(30)
 const algorithmSelection = ref('bubble')
@@ -16,17 +17,7 @@ const playbackSpeed = ref(10) // 1000 is 1 second
 const triggerReset = ref(false)
 let intervalId = null
 
-// Timer variables
-const elapsedTime = ref(0) // Time in seconds
-const timerIntervalId = ref(null)
-const formattedTime = ref('00:00')
-
-// Format seconds to MM:SS
-const formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-}
+const timer = useTimer()
 
 const updateAlgorithm = (algorithm, event) => {
   algorithmSelection.value = algorithm
@@ -41,61 +32,20 @@ const updateAlgorithm = (algorithm, event) => {
   event.target.setAttribute('data-selected', 'true')
 }
 
-// Add a new pauseTimer function
-const pauseTimer = () => {
-  // Only clear the interval without resetting the elapsed time
-  if (timerIntervalId.value) {
-    clearInterval(timerIntervalId.value)
-    timerIntervalId.value = null
-  }
-  // We don't reset elapsedTime.value here
-}
-
-// Update the pauseAlgorithm function to use pauseTimer instead of stopTimer
-const pauseAlgorithm = () => {
-  isPlaying.value = false
-  if (intervalId) {
-    clearInterval(intervalId) // Need to clear interval when pausing
-    intervalId = null
-  }
-  pauseTimer() // Pause the timer instead of stopping it
-}
-
-// Keep the existing startTimer function which will continue from the current elapsed time
-const startTimer = () => {
-  // Clear any existing timer
-  if (timerIntervalId.value) {
-    clearInterval(timerIntervalId.value)
-  }
-
-  // We don't reset elapsedTime here - only when explicitly calling resetTimer or stopTimer
-
-  // Start a new timer that continues from the current elapsed time
-  timerIntervalId.value = setInterval(() => {
-    elapsedTime.value++
-    formattedTime.value = formatTime(elapsedTime.value)
-  }, 1000) // Update every second
-}
-
-// Stop the timer
-const stopTimer = () => {
-  if (timerIntervalId.value) {
-    clearInterval(timerIntervalId.value)
-    timerIntervalId.value = null
-  }
-}
-
-// Update the playAlgorithm function to not reset the timer if we're just resuming
-const playAlgorithm = () => {
-  if (frame.value === totalFrames.value) resetChart()
+// Simplified playAlgorithm with cleaner timer handling
+const playAlgorithm = async () => {
+  if (frame.value === totalFrames.value) await resetChart()
   isPlaying.value = true
 
-  // Only start the timer if it's not already running
-  if (!timerIntervalId.value) {
-    startTimer()
+  // Reset timer only if starting from beginning
+  if (frame.value === 0) {
+    timer.reset()
   }
 
-  let i = frame.value // Start from current frame instead of 0
+  // Start/resume timer
+  timer.start()
+
+  let i = frame.value
   // Clear any previous interval to avoid overlaps
   if (intervalId) clearInterval(intervalId)
 
@@ -106,34 +56,45 @@ const playAlgorithm = () => {
       clearInterval(intervalId)
       intervalId = null
       isPlaying.value = false
-      pauseTimer() // Pause the timer when playback completes
+      timer.pause()
     }
   }, playbackSpeed.value)
 }
 
-const stopAlgorithm = () => {
+// Much cleaner pauseAlgorithm
+const pauseAlgorithm = () => {
   isPlaying.value = false
+
   if (intervalId) {
     clearInterval(intervalId)
     intervalId = null
   }
+
+  timer.pause()
+}
+
+// Cleaner stopAlgorithm
+const stopAlgorithm = () => {
+  isPlaying.value = false
+
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+
   frame.value = 0
-  stopTimer() // Stop the timer
-  elapsedTime.value = 0 // Reset timer
-  formattedTime.value = formatTime(elapsedTime.value)
+  timer.reset()
 }
 
 const resetChart = async () => {
-  await stopAlgorithm()
-  await stopTimer()
+  await stopAlgorithm() // This now also resets the timer
   triggerReset.value = !triggerReset.value
 
-  // Reset colours with null check
+  // Reset colors with null check
   const bars = document.getElementsByClassName('singular-bar')
   if (bars && bars.length > 0) {
     Array.from(bars).forEach((bar) => {
       if (bar) {
-        // Additional null check for each bar
         bar.style.backgroundColor = 'rgb(84, 84, 236)'
       }
     })
@@ -161,9 +122,8 @@ const speedPresets = [
 
 onMounted(() => {
   const sortingAlgo = algorithmSelection.value
-  document
-    .getElementById(`${sortingAlgo}-button`)
-    .setAttribute('data-selected', 'true')
+  const button = document.getElementById(`${sortingAlgo}-button`)
+  if (button) button.setAttribute('data-selected', 'true')
 })
 
 watch([frame, totalFrames], () => {
@@ -179,15 +139,14 @@ watch([frame, totalFrames], () => {
   }
 
   if (frame.value === totalFrames.value) {
-    stopTimer()
+    timer.pause()
   }
 })
 
 watch(sliderValue, () => {
-  // Reset the elasped frames and timer when the slider value changes
+  // Reset the elapsed frames and timer when the slider value changes
   frame.value = 0
-  elapsedTime.value = 0
-  formattedTime.value = formatTime(elapsedTime.value)
+  timer.reset()
 })
 
 watch(algorithmSelection, () => {
@@ -223,7 +182,7 @@ watch(algorithmSelection, () => {
     </div>
     <div id="chart-controls">
       <div class="init-player-info">
-        <p>Time (mm:ss): {{ formattedTime }}</p>
+        <p>Time: {{ timer.formattedTime }}</p>
         <p>Frame / Total frames:</p>
       </div>
       <div class="player-info">
