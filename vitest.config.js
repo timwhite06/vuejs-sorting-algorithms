@@ -16,6 +16,9 @@ export default mergeConfig(
         'src/**/*.{spec,test}.{ts,vue}',
       ],
       fileNameMatcher: '*.{spec,test}.{ts,vue}',
+      coverage: {
+        reporter: ['text', 'json', 'json-summary', 'lcov'],
+      },
     },
   }),
 )
