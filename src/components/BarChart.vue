@@ -45,17 +45,14 @@ export default {
       this.$emit('update:totalFrames', this.sortingSteps.length)
     },
     mergeSort() {
-      console.log('merge')
       this.sortingSteps = mergeSortSteps(this.barArray)
       this.$emit('update:totalFrames', this.sortingSteps.length)
-      console.log(this.sortingSteps.length)
-      console.log(this.sortingSteps[1])
     },
     insertionSort() {
-      console.log('merge')
+      // console.log('merge')
     },
     quickSort() {
-      console.log('quick')
+      // console.log('quick')
     },
     randomBars() {
       this.barArray = []
@@ -105,11 +102,11 @@ export default {
       this.generateBars()
     },
     triggerReset() {
+      console.log('reset')
       this.generateBars()
     },
     algorithmSelection(newAlgorithm, oldAlgorithm) {
       if (newAlgorithm !== oldAlgorithm) {
-        console.log(newAlgorithm)
         switch (newAlgorithm) {
           case 'bubble':
             this.bubbleSort()
@@ -130,7 +127,6 @@ export default {
       }
     },
     frame(newFrame) {
-      console.log(this.sortingSteps)
       if (
         this.isPlaying &&
         this.sortingSteps.length > 0 &&
