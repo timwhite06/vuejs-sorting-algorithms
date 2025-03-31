@@ -3,6 +3,8 @@ import { onMounted, ref, watch } from 'vue'
 import BarChart from './components/BarChart.vue'
 import PlayButton from '@/components/icons/PlayButton.vue'
 import PauseButton from '@/components/icons/PauseButton.vue'
+import RangeSlider from './components/RangeSlider.vue'
+import ChartControlButton from './components/ChartControlButton.vue'
 
 const sliderValue = ref(30)
 const algorithmSelection = ref('bubble')
@@ -164,10 +166,6 @@ watch([frame, totalFrames], () => {
   }
 })
 
-watch(algorithmSelection, () => {
-  resetChart()
-})
-
 watch(sliderValue, () => {
   // Reset the elasped frames and timer when the slider value changes
   frame.value = 0
@@ -210,41 +208,42 @@ watch(algorithmSelection, () => {
       </div>
       <div class="player-info">
         <p>0</p>
-        <input
-          type="range"
-          on
+        <RangeSlider
           v-model="sliderValue"
           :min="0"
           :max="totalFrames"
-          :step="600"
-          value="600"
+          :disabled="isPlaying"
           id="player-progress"
+          class="range-slider"
         />
+
         <p>{{ frame }}/{{ totalFrames }}</p>
       </div>
 
       <div id="playback-controls">
-        <button
-          class="chart-control-button"
+        <ChartControlButton
+          id="play-algo-button"
           @click="playAlgorithm()"
           :disabled="isPlaying"
         >
           <PlayButton :width="20" :height="20" color="#42b983" />
-
           Play
-        </button>
-        <button
-          class="chart-control-button"
+        </ChartControlButton>
+        <ChartControlButton
+          id="stop-algo-button"
           @click="pauseAlgorithm()"
           :disabled="!isPlaying"
         >
           <PauseButton :width="25" :height="25" color="#42b983" />
           Pause
-        </button>
-
-        <button class="chart-control-button reset" @click="resetChart()">
+        </ChartControlButton>
+        <ChartControlButton
+          id="reset-chart-button"
+          @click="resetChart()"
+          :disabled="!isPlaying"
+        >
           Reset
-        </button>
+        </ChartControlButton>
       </div>
 
       <div id="speed-controls">
@@ -265,43 +264,43 @@ watch(algorithmSelection, () => {
 
       <p id="algorithm-control-title">Algorithm:</p>
       <div id="algorithm-controls">
-        <button
-          class="chart-control-button"
+        <ChartControlButton
           id="bubble-button"
           @click="updateAlgorithm('bubble', $event)"
           :disabled="isPlaying && algorithmSelection !== 'bubble'"
+          :selected="algorithmSelection === 'bubble'"
         >
           Bubble Sort
-        </button>
-        <button
-          class="chart-control-button"
+        </ChartControlButton>
+
+        <ChartControlButton
           id="merge-button"
           @click="updateAlgorithm('merge', $event)"
           :disabled="isPlaying && algorithmSelection !== 'merge'"
+          :selected="algorithmSelection === 'merge'"
         >
           Merge Sort
-        </button>
-        <button
-          class="chart-control-button"
+        </ChartControlButton>
+
+        <ChartControlButton
           id="insertion-button"
           @click="updateAlgorithm('insertion', $event)"
           :disabled="isPlaying && algorithmSelection !== 'insertion'"
+          :selected="algorithmSelection === 'insertion'"
         >
           Insertion Sort
-        </button>
-        <button
-          class="chart-control-button"
+        </ChartControlButton>
+
+        <ChartControlButton
           id="quick-button"
           @click="updateAlgorithm('quick', $event)"
           :disabled="isPlaying && algorithmSelection !== 'quick'"
+          :selected="algorithmSelection === 'quick'"
         >
           Quick Sort
-        </button>
+        </ChartControlButton>
       </div>
-
-      <input
-        type="range"
-        on
+      <RangeSlider
         v-model="sliderValue"
         :min="10"
         :max="100"
@@ -323,7 +322,6 @@ header {
   justify-content: center;
   align-items: center;
   gap: 15px;
-  color: white;
 }
 
 #main-app {
@@ -337,11 +335,12 @@ header {
 }
 
 #chart-container {
-  display: flex;
   flex: 1; /* take up the remaining space */
   padding: 20px;
   border: 1px solid darkgray;
   border-radius: 10px;
+  width: 100%;
+  height: 100%;
 }
 
 #chart-controls {
@@ -349,7 +348,35 @@ header {
   display: grid;
   justify-content: center;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
+}
+
+/* Use min-width so that this is only applied on laptops/bigger devices */
+@media (min-width: 700px) {
+  #main-app {
+    flex-direction: row;
+    justify-content: start;
+    align-items: start;
+    padding: 30px;
+    gap: 30px;
+  }
+  #chart-container {
+    flex: 1;
+    order: 2;
+    overflow-x: auto;
+  }
+  #chart-controls {
+    width: 300px;
+    order: 1;
+  }
+}
+@media (min-width: 1300px) {
+  #main-app {
+    flex-direction: column;
+  }
+  #chart-container {
+    flex: 1;
+  }
 }
 
 #playback-controls {
@@ -369,58 +396,6 @@ header {
   display: flex;
   gap: 10px;
   align-items: center;
-}
-
-#player-progress {
-  width: 100%;
-  height: 10px;
-  border: 1px solid lightgray;
-  border-radius: 5px;
-  pointer-events: none;
-  appearance: none; /* Reset default styling */
-  -webkit-appearance: none; /* For Safari */
-}
-
-/* Hide the slider thumb for all browsers */
-#player-progress::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  visibility: hidden;
-}
-
-#player-progress::-moz-range-thumb {
-  width: 0;
-  height: 0;
-  opacity: 0;
-  visibility: hidden;
-  border: none;
-}
-
-#player-progress::-ms-thumb {
-  width: 0;
-  height: 0;
-  opacity: 0;
-  visibility: hidden;
-}
-
-/* Optionally, you can style the track itself */
-#player-progress::-webkit-slider-runnable-track {
-  background: #ddd;
-  border-radius: 3px;
-}
-
-#player-progress::-moz-range-track {
-  background: #ddd;
-  border-radius: 3px;
-}
-
-#player-progress::-ms-track {
-  height: 5px;
-  background: #ddd;
-  border-radius: 3px;
 }
 
 #algorithm-controls {
@@ -446,40 +421,6 @@ header {
 
 .speed-button.active {
   background-color: rgb(91, 236, 255);
-  color: black;
-}
-
-.chart-control-button {
-  width: 100%;
-  background-color: darkgreen;
-  color: white;
-  padding: 7px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-}
-
-.chart-control-button.reset {
-  background-color: rgba(255, 0, 0, 0.498);
-}
-
-.chart-control-button[data-selected] {
-  background-color: lightgreen;
-  color: black;
-}
-
-.chart-control-button:disabled {
-  background-color: lightgray;
-  color: darkgray;
-  pointer-events: none;
-}
-
-.chart-control-button:hover {
-  background-color: lightgreen;
   color: black;
 }
 </style>

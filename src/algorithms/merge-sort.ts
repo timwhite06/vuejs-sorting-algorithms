@@ -149,6 +149,5 @@ export function mergeSortSteps(arr: number[]): SortStep[] {
   // Call the recursive function
   mergeSortHelper(cloned, 0, cloned.length - 1, steps)
 
-  console.log(steps)
   return steps
 }
