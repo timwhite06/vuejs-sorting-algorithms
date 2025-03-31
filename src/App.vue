@@ -5,8 +5,9 @@ import PlayButton from '@/components/icons/PlayButton.vue'
 import PauseButton from '@/components/icons/PauseButton.vue'
 import RangeSlider from '@/components/RangeSlider.vue'
 import ChartControlButton from '@/components/ChartControlButton.vue'
-import GithubIcon from '@/components/icons/GithubIcon.vue'
 import { useTimer } from '@/hooks/useTimer'
+import AppHeader from './components/AppHeader.vue'
+import SpeedControls from './components/SpeedControls.vue'
 
 const sliderValue = ref(30)
 const algorithmSelection = ref('bubble')
@@ -101,25 +102,6 @@ const resetChart = async () => {
   }
 }
 
-// Added function to update playback speed
-const updatePlaybackSpeed = (speed) => {
-  playbackSpeed.value = speed
-
-  // If currently playing, restart the interval with new speed
-  if (isPlaying.value && intervalId) {
-    clearInterval(intervalId)
-    playAlgorithm()
-  }
-}
-
-// Added speed presets
-const speedPresets = [
-  { label: 'Slow', value: 250 },
-  { label: 'Medium', value: 100 },
-  { label: 'Fast', value: 25 },
-  { label: 'Very Fast', value: 5 },
-]
-
 onMounted(() => {
   const sortingAlgo = algorithmSelection.value
   const button = document.getElementById(`${sortingAlgo}-button`)
@@ -143,6 +125,29 @@ watch([frame, totalFrames], () => {
   }
 })
 
+const handlePlaybackSpeedUpdate = (newSpeed) => {
+  playbackSpeed.value = newSpeed
+
+  // If currently playing, restart the interval with new speed
+  if (isPlaying.value && intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+
+    // Restart the interval with the new speed
+    let i = frame.value
+    intervalId = setInterval(() => {
+      frame.value = i
+      i++
+      if (i > totalFrames.value) {
+        clearInterval(intervalId)
+        intervalId = null
+        isPlaying.value = false
+        timer.pause()
+      }
+    }, playbackSpeed.value)
+  }
+}
+
 watch(sliderValue, () => {
   // Reset the elapsed frames and timer when the slider value changes
   frame.value = 0
@@ -155,19 +160,7 @@ watch(algorithmSelection, () => {
 </script>
 
 <template>
-  <header>
-    <img
-      alt="Vue logo"
-      class="logo"
-      src="./assets/logo.svg"
-      width="30"
-      height="30"
-    />
-    <p>Timothy White - Vue JS Algorithm Sorting Project</p>
-    <a href="https://github.com/timwhite06/vuejs-sorting-algorithms">
-      <GithubIcon :width="32" :height="32" />
-    </a>
-  </header>
+  <AppHeader />
 
   <main id="main-app">
     <div id="chart-container">
@@ -267,21 +260,12 @@ watch(algorithmSelection, () => {
         :step="1"
         :disabled="isPlaying"
       />
-      <div id="speed-controls">
-        <p>Speed per frame: {{ playbackSpeed }}ms</p>
-        <div class="speed-buttons">
-          <button
-            v-for="preset in speedPresets"
-            :key="preset.value"
-            class="speed-button"
-            :class="{ active: playbackSpeed === preset.value }"
-            @click="updatePlaybackSpeed(preset.value)"
-            :disabled="isPlaying && playbackSpeed === preset.value"
-          >
-            {{ preset.label }}
-          </button>
-        </div>
-      </div>
+
+      <SpeedControls
+        :playbackSpeed="playbackSpeed"
+        :isPlaying="isPlaying"
+        @update:playbackSpeed="handlePlaybackSpeedUpdate"
+      />
     </div>
   </main>
 </template>
@@ -381,25 +365,5 @@ header {
   display: flex;
   gap: 10px;
   width: 100%;
-}
-
-.speed-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.speed-button {
-  width: 100%;
-  background-color: rgb(19, 90, 74);
-  color: white;
-  padding: 7px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.speed-button.active {
-  background-color: rgb(91, 236, 255);
-  color: black;
 }
 </style>
