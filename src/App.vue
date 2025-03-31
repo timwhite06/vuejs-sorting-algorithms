@@ -28,18 +28,49 @@ const formatTime = (seconds) => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-// Start the timer
+const updateAlgorithm = (algorithm, event) => {
+  algorithmSelection.value = algorithm
+
+  // Remove the selected attribute from all buttons
+  const buttons = document.querySelectorAll('.chart-control-button')
+  buttons.forEach((button) => {
+    button.removeAttribute('data-selected')
+  })
+
+  // Set an attribute so we can access it via CSS
+  event.target.setAttribute('data-selected', 'true')
+}
+
+// Add a new pauseTimer function
+const pauseTimer = () => {
+  // Only clear the interval without resetting the elapsed time
+  if (timerIntervalId.value) {
+    clearInterval(timerIntervalId.value)
+    timerIntervalId.value = null
+  }
+  // We don't reset elapsedTime.value here
+}
+
+// Update the pauseAlgorithm function to use pauseTimer instead of stopTimer
+const pauseAlgorithm = () => {
+  isPlaying.value = false
+  if (intervalId) {
+    clearInterval(intervalId) // Need to clear interval when pausing
+    intervalId = null
+  }
+  pauseTimer() // Pause the timer instead of stopping it
+}
+
+// Keep the existing startTimer function which will continue from the current elapsed time
 const startTimer = () => {
   // Clear any existing timer
   if (timerIntervalId.value) {
     clearInterval(timerIntervalId.value)
   }
 
-  // Reset elapsed time
-  elapsedTime.value = 0
-  formattedTime.value = formatTime(elapsedTime.value)
+  // We don't reset elapsedTime here - only when explicitly calling resetTimer or stopTimer
 
-  // Start a new timer
+  // Start a new timer that continues from the current elapsed time
   timerIntervalId.value = setInterval(() => {
     elapsedTime.value++
     formattedTime.value = formatTime(elapsedTime.value)
@@ -54,22 +85,15 @@ const stopTimer = () => {
   }
 }
 
-const updateAlgorithm = (algorithm, event) => {
-  algorithmSelection.value = algorithm
-
-  // Remove the selected attribute from all buttons
-  const buttons = document.querySelectorAll('.chart-control-button')
-  buttons.forEach((button) => {
-    button.removeAttribute('data-selected')
-  })
-
-  // Set an attribute so we can access it via CSS
-  event.target.setAttribute('data-selected', 'true')
-}
-
+// Update the playAlgorithm function to not reset the timer if we're just resuming
 const playAlgorithm = () => {
+  if (frame.value === totalFrames.value) resetChart()
   isPlaying.value = true
-  startTimer()
+
+  // Only start the timer if it's not already running
+  if (!timerIntervalId.value) {
+    startTimer()
+  }
 
   let i = frame.value // Start from current frame instead of 0
   // Clear any previous interval to avoid overlaps
@@ -82,17 +106,9 @@ const playAlgorithm = () => {
       clearInterval(intervalId)
       intervalId = null
       isPlaying.value = false
+      pauseTimer() // Pause the timer when playback completes
     }
   }, playbackSpeed.value)
-}
-
-const pauseAlgorithm = () => {
-  isPlaying.value = false
-  if (intervalId) {
-    clearInterval(intervalId) // Need to clear interval when pausing
-    intervalId = null
-  }
-  stopTimer() // Pause the timer
 }
 
 const stopAlgorithm = () => {
@@ -241,29 +257,9 @@ watch(algorithmSelection, () => {
           <PauseButton :width="25" :height="25" color="#42b983" />
           Pause
         </ChartControlButton>
-        <ChartControlButton
-          id="reset-chart-button"
-          @click="resetChart()"
-          :disabled="!isPlaying"
-        >
+        <ChartControlButton id="reset-chart-button" @click="resetChart()">
           Reset
         </ChartControlButton>
-      </div>
-
-      <div id="speed-controls">
-        <p>Speed per frame: {{ playbackSpeed }}ms</p>
-        <div class="speed-buttons">
-          <button
-            v-for="preset in speedPresets"
-            :key="preset.value"
-            class="speed-button"
-            :class="{ active: playbackSpeed === preset.value }"
-            @click="updatePlaybackSpeed(preset.value)"
-            :disabled="isPlaying && playbackSpeed === preset.value"
-          >
-            {{ preset.label }}
-          </button>
-        </div>
       </div>
 
       <p id="algorithm-control-title">Algorithm:</p>
@@ -304,6 +300,7 @@ watch(algorithmSelection, () => {
           Quick Sort
         </ChartControlButton>
       </div>
+      <p>Bars: {{ sliderValue }}</p>
       <RangeSlider
         v-model="sliderValue"
         :min="10"
@@ -311,7 +308,21 @@ watch(algorithmSelection, () => {
         :step="1"
         :disabled="isPlaying"
       />
-      <p>Bars: {{ sliderValue }}</p>
+      <div id="speed-controls">
+        <p>Speed per frame: {{ playbackSpeed }}ms</p>
+        <div class="speed-buttons">
+          <button
+            v-for="preset in speedPresets"
+            :key="preset.value"
+            class="speed-button"
+            :class="{ active: playbackSpeed === preset.value }"
+            @click="updatePlaybackSpeed(preset.value)"
+            :disabled="isPlaying && playbackSpeed === preset.value"
+          >
+            {{ preset.label }}
+          </button>
+        </div>
+      </div>
     </div>
   </main>
 </template>
@@ -352,7 +363,7 @@ header {
   display: grid;
   justify-content: center;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
 }
 
 /* Use min-width so that this is only applied on laptops/bigger devices */
@@ -380,6 +391,11 @@ header {
   }
   #chart-container {
     flex: 1;
+    order: 1;
+  }
+  #chart-controls {
+    order: 2;
+    width: 100%;
   }
 }
 
