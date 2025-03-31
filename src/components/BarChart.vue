@@ -1,6 +1,8 @@
 <script>
 import { bubbleSortSteps } from '@/algorithms/bubble-sort'
+import { insertionSortSteps } from '@/algorithms/insertion-sort'
 import { mergeSortSteps } from '@/algorithms/merge-sort'
+import { quickSortSteps } from '@/algorithms/quick-sort'
 
 export default {
   props: {
@@ -49,10 +51,12 @@ export default {
       this.$emit('update:totalFrames', this.sortingSteps.length)
     },
     insertionSort() {
-      // console.log('merge')
+      this.sortingSteps = insertionSortSteps(this.barArray)
+      this.$emit('update:totalFrames', this.sortingSteps.length)
     },
     quickSort() {
-      // console.log('quick')
+      this.sortingSteps = quickSortSteps(this.barArray)
+      this.$emit('update:totalFrames', this.sortingSteps.length)
     },
     randomBars() {
       this.barArray = []
@@ -102,7 +106,6 @@ export default {
       this.generateBars()
     },
     triggerReset() {
-      console.log('reset')
       this.generateBars()
     },
     algorithmSelection(newAlgorithm, oldAlgorithm) {

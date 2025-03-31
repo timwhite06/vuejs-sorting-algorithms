@@ -1,8 +1,4 @@
-export interface SortStep {
-  array: number[]
-  comparedIndices: [number, number]
-  swapped: boolean
-}
+import { SortStep } from './index'
 
 function merge(
   arr: number[],
